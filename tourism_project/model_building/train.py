@@ -10,7 +10,7 @@ from sklearn.metrics import classification_report
 # for model serialization
 import joblib
 import mlflow
-
+from pathlib import Path
 #mlflow.set_tracking_uri("http://localhost:5000")
 #mlflow.set_experiment("mlops-training-experiment")
 
@@ -97,7 +97,19 @@ with mlflow.start_run():
     best_model = grid_search.best_estimator_
     print("Best params:", grid_search.best_params_)
 
+    # Get the project directory
+    PROJECT_DIR = Path(__file__).resolve().parents[1]
 
+    # Create the deployment directory if it does not exist
+    MODEL_DIR = PROJECT_DIR / "deployment"
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Save the trained model
+    MODEL_PATH = MODEL_DIR / "best_model.pkl"
+
+    joblib.dump(best_model, MODEL_PATH)
+
+    print(f"Model saved successfully at: {MODEL_PATH}")
     classification_threshold = 0.5
 
     y_pred_train_proba = best_model.predict_proba(Xtrain)[:, 1]
