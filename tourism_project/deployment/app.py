@@ -1,302 +1,200 @@
-from pathlib import Path
+
 import os
-
-import joblib
-import pandas as pd
 import streamlit as st
+import pandas as pd
+import joblib
 
 
-# --------------------------------------------------
-# Configuration
-# --------------------------------------------------
+# Load the model committed by the pipeline (sits next to this file)
+model_path = os.path.join(os.path.dirname(__file__), "best_tourism_package_model_v1.joblib")
+model = joblib.load(model_path)
 
-APP_DIR = Path(__file__).resolve().parent
-PROJECT_DIR = APP_DIR.parent
-REPO_DIR = PROJECT_DIR.parent
 
-st.set_page_config(
-    page_title="Tourism Package Prediction",
-    page_icon="✈️",
-    layout="wide",
+# Streamlit App
+
+st.title("Tourism Package Purchase Prediction App")
+
+st.write("""
+This application predicts whether a customer is likely to purchase
+a tourism package based on their demographic information,
+travel preferences, and interaction details.
+""")
+
+# Customer Details
+
+st.header("Customer Details")
+
+Age = st.number_input(
+    "Age",
+    min_value=18,
+    max_value=100,
+    value=30
 )
 
-st.title("✈️ Tourism Package Prediction")
-st.write(
-    "Use the committed machine-learning model to predict "
-    "whether a customer is likely to purchase a tourism package."
+TypeofContact = st.selectbox(
+    "Type of Contact",
+    ["Company Invited", "Self Inquiry"]
+)
+
+CityTier = st.selectbox(
+    "City Tier",
+    [1, 2, 3]
+)
+
+Occupation = st.selectbox(
+    "Occupation",
+    ["Salaried", "Small Business", "Large Business", "Free Lancer"]
+)
+
+Gender = st.selectbox(
+    "Gender",
+    ["Male", "Female"]
+)
+
+MaritalStatus = st.selectbox(
+    "Marital Status",
+    ["Married", "Unmarried", "Divorced"]
+)
+
+Designation = st.selectbox(
+    "Designation",
+    ["Executive", "Manager", "Senior Manager", "AVP", "VP"]
+)
+
+ProductPitched = st.selectbox(
+    "Product Pitched",
+    ["Basic", "Standard", "Deluxe", "Super Deluxe", "King"]
 )
 
 
-# --------------------------------------------------
-# Locate the committed model
-# --------------------------------------------------
+# Travel Details
 
-def find_model():
-    """
-    Locate a model committed to the repository.
+st.header("Travel Details")
 
-    Optionally set MODEL_PATH to specify the exact model path.
-    """
+NumberOfPersonVisiting = st.number_input(
+    "Number of Persons Visiting",
+    min_value=1,
+    max_value=10,
+    value=2
+)
 
-    configured_path = os.getenv("MODEL_PATH")
+PreferredPropertyStar = st.selectbox(
+    "Preferred Property Star",
+    [3, 4, 5]
+)
 
-    if configured_path:
-        model_path = Path(configured_path)
+NumberOfTrips = st.number_input(
+    "Number of Trips",
+    min_value=0,
+    max_value=50,
+    value=2
+)
 
-        if not model_path.is_absolute():
-            model_path = REPO_DIR / model_path
+Passport = st.selectbox(
+    "Passport",
+    [0, 1],
+    format_func=lambda x: "Yes" if x == 1 else "No"
+)
 
-        if not model_path.is_file():
-            raise FileNotFoundError(
-                f"Configured model file does not exist: {model_path}"
-            )
+OwnCar = st.selectbox(
+    "Own Car",
+    [0, 1],
+    format_func=lambda x: "Yes" if x == 1 else "No"
+)
 
-        return model_path
-
-    search_directories = [
-        APP_DIR,
-        PROJECT_DIR,
-        REPO_DIR,
-    ]
-
-    candidates = []
-
-    for directory in search_directories:
-        for extension in ("*.joblib", "*.pkl"):
-            candidates.extend(directory.rglob(extension))
-
-    # Remove duplicate paths and sort deterministically.
-    candidates = sorted(set(candidates))
-
-    if not candidates:
-        raise FileNotFoundError(
-            "No .pkl or .joblib model was found. "
-            "Commit the trained model to the repository or "
-            "configure MODEL_PATH."
-        )
-
-    if len(candidates) > 1:
-        st.warning(
-            "Multiple model files were found. "
-            "The first sorted file will be selected. "
-            "Set MODEL_PATH to choose a specific model."
-        )
-
-        for candidate in candidates:
-            st.write(f"- {candidate.relative_to(REPO_DIR)}")
-
-    return candidates[0]
+NumberOfChildrenVisiting = st.number_input(
+    "Number of Children Visiting",
+    min_value=0,
+    max_value=10,
+    value=0
+)
+# Interaction Details
 
 
-# --------------------------------------------------
-# Load model
-# --------------------------------------------------
+st.header("Customer Interaction Details")
 
-@st.cache_resource
-def load_model(model_path: str):
-    """
-    Load a trusted, repository-committed model.
+MonthlyIncome = st.number_input(
+    "Monthly Income",
+    min_value=0.0,
+    max_value=1000000.0,
+    value=25000.0,
+    step=1000.0
+)
 
-    Only load pickle/joblib files from sources you trust.
-    """
+PitchSatisfactionScore = st.selectbox(
+    "Pitch Satisfaction Score",
+    [1, 2, 3, 4, 5]
+)
 
-    return joblib.load(model_path)
+NumberOfFollowups = st.number_input(
+    "Number of Followups",
+    min_value=0,
+    max_value=20,
+    value=2
+)
+
+DurationOfPitch = st.number_input(
+    "Duration of Pitch (minutes)",
+    min_value=0,
+    max_value=120,
+    value=10
+)
+
+# Create Input DataFrame
 
 
-try:
-    model_path = find_model()
-    model = load_model(str(model_path))
+input_data = pd.DataFrame([{
 
-    st.success("Model loaded successfully.")
-    st.caption(f"Model file: {model_path.name}")
+    "Age": Age,
+    "TypeofContact": TypeofContact,
+    "CityTier": CityTier,
+    "Occupation": Occupation,
+    "Gender": Gender,
+    "MaritalStatus": MaritalStatus,
+    "Designation": Designation,
+    "ProductPitched": ProductPitched,
+    "NumberOfPersonVisiting": NumberOfPersonVisiting,
+    "PreferredPropertyStar": PreferredPropertyStar,
+    "NumberOfTrips": NumberOfTrips,
+    "Passport": Passport,
+    "OwnCar": OwnCar,
+    "NumberOfChildrenVisiting": NumberOfChildrenVisiting,
+    "MonthlyIncome": MonthlyIncome,
+    "PitchSatisfactionScore": PitchSatisfactionScore,
+    "NumberOfFollowups": NumberOfFollowups,
+    "DurationOfPitch": DurationOfPitch
 
-except Exception as error:
-    st.error(f"Unable to load the model: {error}")
+}])
 
-    st.info(
-        "Check that the trained model is committed to GitHub, "
-        "the file path is correct, and the required dependencies "
-        "are installed."
+# Prediction
+
+
+if st.button("Predict Package Purchase"):
+
+    prediction = model.predict(input_data)[0]
+
+    result = (
+        "Package Purchase"
+        if prediction == 1
+        else "No Package Purchase"
     )
 
-    st.stop()
+    st.subheader("Prediction Result:")
 
-
-# --------------------------------------------------
-# Model information
-# --------------------------------------------------
-
-feature_names = getattr(model, "feature_names_in_", None)
-
-if feature_names is None and hasattr(model, "named_steps"):
-    # Some pipelines expose feature names through their final estimator.
-    final_estimator = list(model.named_steps.values())[-1]
-    feature_names = getattr(final_estimator, "feature_names_in_", None)
-
-if feature_names is not None:
-    feature_names = list(feature_names)
-
-st.subheader("Model information")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.metric("Input features", len(feature_names) if feature_names else "Not exposed")
-
-with col2:
-    st.write("Model type")
-    st.write(type(model).__name__)
-
-
-# --------------------------------------------------
-# Prediction interface
-# --------------------------------------------------
-
-st.subheader("Make predictions")
-
-tab_single, tab_batch = st.tabs([
-    "Single prediction", "Batch predictions (CSV)"
-])
-
-
-# --------------------------------------------------
-# Single prediction
-# --------------------------------------------------
-
-with tab_single:
-
-    if not feature_names:
-        st.warning(
-            "This model does not expose its input feature names. "
-            "Use batch prediction with a CSV containing the "
-            "same features and order used during model training."
+    if prediction == 1:
+        st.success(
+            "The model predicts: **Customer is likely to purchase the package!**"
         )
-
     else:
-        st.write("Enter the customer details below.")
+        st.info(
+            "The model predicts: **Customer is unlikely to purchase the package.**"
+        )
 
-        with st.form("prediction_form"):
-            input_values = {}
+    # Show probability if supported by the model
+    if hasattr(model, "predict_proba"):
 
-            for feature in feature_names:
-                input_values[feature] = st.number_input(
-                    label=str(feature),
-                    value=0.0,
-                    format="%.4f",
-                    key=f"input_{feature}",
-                )
+        probability = model.predict_proba(input_data)[0][1]
 
-            submitted = st.form_submit_button("Predict")
-
-        if submitted:
-            try:
-                input_df = pd.DataFrame(
-                    [input_values],
-                    columns=feature_names,
-                )
-
-                prediction = model.predict(input_df)
-
-                st.success("Prediction completed.")
-
-                st.write("### Prediction result")
-                st.write(prediction[0])
-
-                if hasattr(model, "predict_proba"):
-                    probabilities = model.predict_proba(input_df)
-
-                    st.write("### Prediction probabilities")
-
-                    classes = getattr(
-                        model,
-                        "classes_",
-                        list(range(probabilities.shape[1])),
-                    )
-
-                    probability_df = pd.DataFrame({
-                        "Class": classes,
-                        "Probability": probabilities[0],
-                    })
-
-                    st.dataframe(
-                        probability_df,
-                        use_container_width=True,
-                    )
-
-            except Exception as error:
-                st.error(f"Prediction failed: {error}")
-
-
-# --------------------------------------------------
-# Batch predictions
-# --------------------------------------------------
-
-with tab_batch:
-    st.write(
-        "Upload a CSV file containing the model's input features. "
-        "Do not include the target column unless the model requires it."
-    )
-
-    uploaded_file = st.file_uploader(
-        "Upload customer data",
-        type=["csv"],
-    )
-
-    if uploaded_file is not None:
-        try:
-            input_df = pd.read_csv(uploaded_file)
-
-            st.write("### Uploaded data")
-            st.dataframe(input_df.head(), use_container_width=True)
-
-            if feature_names:
-                missing = [
-                    name for name in feature_names
-                    if name not in input_df.columns
-                ]
-
-                if missing:
-                    st.error(
-                        "The CSV is missing required features: "
-                        + ", ".join(map(str, missing))
-                    )
-                    st.stop()
-
-                # Preserve the exact feature order used by the model.
-                input_df = input_df[feature_names]
-
-            if st.button("Run batch predictions"):
-                predictions = model.predict(input_df)
-
-                results = pd.DataFrame({
-                    "Prediction": predictions
-                })
-
-                if hasattr(model, "predict_proba"):
-                    probabilities = model.predict_proba(input_df)
-
-                    classes = getattr(
-                        model,
-                        "classes_",
-                        range(probabilities.shape[1]),
-                    )
-
-                    for index, class_label in enumerate(classes):
-                        results[
-                            f"Probability_{class_label}"
-                        ] = probabilities[:, index]
-
-                st.write("### Prediction results")
-                st.dataframe(results, use_container_width=True)
-
-                csv_data = results.to_csv(index=False).encode("utf-8")
-
-                st.download_button(
-                    label="Download predictions as CSV",
-                    data=csv_data,
-                    file_name="tourism_predictions.csv",
-                    mime="text/csv",
-                )
-
-        except Exception as error:
-            st.error(f"Unable to process the CSV: {error}")
+        st.write(
+            f"Purchase Probability: **{probability:.2%}**"
+        )
