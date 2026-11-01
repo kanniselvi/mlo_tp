@@ -66,8 +66,8 @@ jobs:
       - name: Verify Train Test Splits
         run: |
           ls -l tourism_project/data/
-          test -f tourism_project/data/xtrain.csv
-          test -f tourism_project/data/xtest.csv
+          test -f tourism_project/data/Xtrain.csv
+          test -f tourism_project/data/Xtest.csv
           test -f tourism_project/data/ytrain.csv
           test -f tourism_project/data/ytest.csv
 
@@ -76,8 +76,8 @@ jobs:
         with:
           name: data-splits
           path: |
-            tourism_project/data/xtrain.csv
-            tourism_project/data/xtest.csv
+            tourism_project/data/Xtrain.csv
+            tourism_project/data/Xtest.csv
             tourism_project/data/ytrain.csv
             tourism_project/data/ytest.csv
           if-no-files-found: error
