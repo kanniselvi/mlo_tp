@@ -2,7 +2,7 @@
 import os
 import streamlit as st
 import pandas as pd
-from sklearn.externals import joblib
+import joblib
 
 # Load the model committed by the pipeline (sits next to this file)
 model_path = os.path.join(os.path.dirname(__file__), "best_tourism_package_model_v1.joblib")
